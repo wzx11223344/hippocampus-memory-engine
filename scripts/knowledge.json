@@ -173,6 +173,11 @@
           "title": "海马体知识库 v2 升级",
           "detail": "2026-07-30 用户要求四部分升级：(1)把知识库与引擎更新到 GitHub(wzx11223344/hippocampus-memory-engine)并封装为 Skill,同时发布到 SkillHub;(2)把当前会话新增要求作为第一部分内容写回 knowledge.json;(3)同步到本地 Obsidian Vault;(4)建立自动迭代机制,使每次新建任务、新建对话或每日更新都能自动汇流进海马体,并自我更迭。",
           "source": "当前会话"
+        },
+        {
+          "title": "第一部分：GitHub + Skill + SkillHub 上线",
+          "detail": "2026-07-30 完成：GitHub 仓库 wzx11223344/hippocampus-memory-engine 已推送 v1.1.0 代码、可视化站点(index.html/flow.html)与示例 knowledge.json;本地 Trae Skill 位于 C:\\Users\\Administrator\\.trae-cn\\skills\\hippocampus-memory-engine;SkillHub/ClawHub 已发布 hippocampus-memory-engine@1.0.0 (k97cf8jgpcjvc9p9m410c6z4hd8bep6b),可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
+          "source": "当前会话"
         }
       ]
     },
@@ -200,12 +205,12 @@
         },
         {
           "title": "GitHub",
-          "detail": "已连接 (wzx11223344)。仓库 wzx11223344/hippocampus-memory-engine 存放引擎脚本、可视化站点(index.html/flow.html)与示例 knowledge.json,启用 GitHub Pages 作为线上镜像。",
+          "detail": "已连接 (wzx11223344)。仓库 wzx11223344/hippocampus-memory-engine 已推送 v1.1.0,存放引擎脚本、可视化站点(index.html/flow.html/flowsite)与示例 knowledge.json,启用 GitHub Pages 作为线上镜像。",
           "source": "connector: github"
         },
         {
           "title": "SkillHub / ClawHub",
-          "detail": "海马体记忆流引擎已封装为 Skill(hippocampus-memory-engine),支持 WorkBuddy 与 Trae 本地安装,并发布到 SkillHub/ClawHub 供外部调用。",
+          "detail": "已发布 hippocampus-memory-engine@1.0.0 (id: k97cf8jgpcjvc9p9m410c6z4hd8bep6b),支持 WorkBuddy 与 Trae 本地安装,外部可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
           "source": "connector: skillhub"
         },
         {
