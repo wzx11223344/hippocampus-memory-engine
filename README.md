@@ -16,7 +16,8 @@
 - **Obsidian 同步**：一键导出 `knowledge.json` 为 Obsidian Vault 的 Markdown + 双链
 - **零模型下载**：本地 TF-IDF 向量化（仅依赖 `numpy`），离线可跑、隐私友好
 - **跨会话同步**：配合每日 `sync.py all` 定时任务，任何新任务/新对话的记忆当晚自动汇流进中枢
-- **Skill 化**：已封装为 WorkBuddy / Trae Skill，可发布到 SkillHub/ClawHub
+- **会话级增量**：`sync.py incremental --text` 可在每次新建任务/对话结束时实时追加，不重复灌入历史数据
+- **Skill 化**：已封装为 WorkBuddy / Trae Skill，已发布到 SkillHub/ClawHub
 
 ## 🚀 快速开始
 
@@ -33,6 +34,16 @@ venv/Scripts/python.exe scripts/sync.py all
 ```
 
 开箱示例：仓库自带 `scripts/knowledge.json`（海马体 5 区 + auto 区示例），不改任何配置直接 `python scripts/sync.py all` 即可生成 `index.html` 验证引擎可用。
+
+## 🔄 自动迭代
+
+| 场景 | 命令 | 说明 |
+|------|------|------|
+| 每日汇总 | `python sync.py all` | 清空 L3/L2，从所有静态源重新 consolidate，推荐配置定时任务 |
+| 新建任务/对话结束 | `python sync.py incremental --text "本次核心结论..."` | 不重置引擎，追加本轮内容并刷新可视化/Obsidian |
+| 单条记录 | `python sync.py ingest --text "关键事实" --type semantic --importance 0.8` | 直接写入一条记忆 |
+| 只刷新可视化 | `python sync.py rebuild` | 依据当前 knowledge.json 重建 index.html |
+| 只导出 Obsidian | `python sync.py obsidian` | 重新生成 Obsidian Vault 内容 |
 
 ## 📁 结构
 
@@ -55,7 +66,7 @@ hippocampus-memory-engine/
     ├── vectors.py                 # VectorStore（.npy 持久化 + 余弦检索）
     ├── db.py                      # SQLite L3
     ├── engine.py                  # HippocampusEngine（双写/检索/蒸馏）
-    ├── sync.py                    # 入口 seed/distill/rebuild/all
+    ├── sync.py                    # 入口 seed/distill/rebuild/incremental/ingest/all
     ├── build_index.py             # 海马体 SVG 可视化生成
     ├── build_flow.py              # 流动知识图谱生成
     ├── graph_builder.py           # 知识图谱构建
@@ -76,7 +87,9 @@ hippocampus-memory-engine/
 2. 重启 Trae 后即可通过自然语言触发（如"更新海马体知识库"）。
 
 **SkillHub / ClawHub**
-下载 Release 中的 `hippocampus-memory-engine.zip`，通过对应平台的 skill install 命令安装。
+```bash
+npx clawhub@latest skill install hippocampus-memory-engine
+```
 
 ## 🧪 检索示例
 

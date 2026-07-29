@@ -1,5 +1,5 @@
 {
-  "user_id": "user",
+  "user_id": "wzx",
   "similarity_threshold": 0.10,
   "top_k": 5,
   "window": 20,
@@ -7,13 +7,20 @@
     "db": "memory.db",
     "vectors": "vectors/index.npy",
     "vocab": "vectors/vocab.json",
-    "knowledge": "knowledge.json",
-    "index_html": "index.html",
+    "knowledge": "../海马体知识库/knowledge.json",
+    "index_html": "../海马体知识库/index.html",
+    "graph": "../海马体知识库/graph.json",
+    "flow_template": "../海马体知识库/flow_template.html",
+    "flow_html": "../海马体知识库/flow.html",
+    "flow_site": "../海马体知识库/flowsite/index.html",
+    "obsidian_vault": "C:/Users/Administrator/Documents/Obsidian Vault",
+    "obsidian_subdir": "海马体记忆流",
+    "flow_site_url": "https://14c618dbef3041478b3fdaf476de864d.gz5.agentos-app.net",
     "sources": {
-      "memory_md": "MEMORY.md",
-      "workspace_logs": "logs",
-      "archive_readme": "README.md",
-      "trae_memory": "trae_memory"
+      "memory_md": "C:/Users/Administrator/.workbuddy/MEMORY.md",
+      "workspace_logs": "../.workbuddy/memory",
+      "archive_readme": "../导入归档/README.md",
+      "trae_memory": "../导入归档/trae_memory"
     }
   }
 }

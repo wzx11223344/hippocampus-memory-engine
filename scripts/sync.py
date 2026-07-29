@@ -1,14 +1,20 @@
 """sync.py —— 海马体记忆流同步入口。
 模式：
-  seed    把现有资产(知识库/knowledge.json + MEMORY.md + 工作区日志 + 归档README)灌入引擎
-  distill 把引擎高价值记忆蒸馏进 knowledge.json（海马体知识库）
-  rebuild 依据 knowledge.json 重建 index.html（可视化同步）
-  all     依次执行 seed -> distill -> rebuild
+  seed        把现有资产(知识库/knowledge.json + MEMORY.md + 工作区日志 + 归档README)灌入引擎
+  distill     把引擎高价值记忆蒸馏进 knowledge.json（海马体知识库）
+  rebuild     依据 knowledge.json 重建 index.html（可视化同步）
+  incremental 不重置引擎，追加本轮新内容并刷新可视化/Obsidian
+  ingest      接收 --text/--source/--type/--importance 直接写入单条记忆
+  all         依次执行 seed -> distill -> rebuild
 用法：python sync.py all
+      python sync.py ingest --text "本次会话学到..." --type episodic --importance 0.7
 """
-import json, os, glob, sys
+import json, os, glob, sys, argparse
 from engine import HippocampusEngine
 import build_index
+import graph_builder
+import build_flow as bf_mod
+import export_obsidian as ex_mod
 
 def _read_lines(path):
     try:
@@ -162,17 +168,77 @@ def rebuild(eng: HippocampusEngine):
     build_index.build(eng.knowledge_path, ih)
     print(f"[rebuild] 已重建 {ih}")
 
+def build_graph(eng: HippocampusEngine):
+    base = os.path.dirname(os.path.abspath("config.json"))
+    kp = os.path.normpath(os.path.join(base, eng.cfg["paths"]["knowledge"]))
+    gp = os.path.normpath(os.path.join(base, eng.cfg["paths"]["graph"]))
+    graph_builder.build(eng, kp, gp)
+
+def build_flow(eng: HippocampusEngine):
+    bf_mod.build(eng.cfg)
+
+def export_obsidian(eng: HippocampusEngine):
+    ex_mod.build(eng.cfg)
+
+
+def incremental(eng: HippocampusEngine, text=None):
+    """不重置引擎，追加本轮新内容并刷新可视化/Obsidian。"""
+    added = 0
+    if text:
+        eng.add_memory(text, memory_type="episodic", source="agent:session", importance=0.7)
+        added += 1
+    print(f"[incremental] 已追加 {added} 条记忆；引擎统计 {eng.stats()}")
+    distill(eng)
+    rebuild(eng)
+    build_graph(eng)
+    build_flow(eng)
+    export_obsidian(eng)
+
+
+def ingest(eng: HippocampusEngine, text, mtype="episodic", source="agent:session", importance=0.6):
+    """直接写入单条记忆并刷新下游产物。"""
+    mid = eng.add_memory(text, memory_type=mtype, source=source, importance=importance)
+    print(f"[ingest] mid={mid} 已写入")
+    distill(eng)
+    rebuild(eng)
+    build_graph(eng)
+    build_flow(eng)
+    export_obsidian(eng)
+
+
 def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "all"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mode", nargs="?", default="all",
+                        choices=["seed", "distill", "rebuild", "graph", "flow", "obsidian",
+                                 "incremental", "ingest", "all"])
+    parser.add_argument("--text", default=None, help="ingest/incremental 要写入的记忆文本")
+    parser.add_argument("--source", default="agent:session", help="记忆来源")
+    parser.add_argument("--type", default="episodic", help="记忆类型")
+    parser.add_argument("--importance", type=float, default=0.6, help="重要程度 0-1")
+    args = parser.parse_args()
+
     eng = HippocampusEngine("config.json")
-    if mode in ("seed", "all"):
-        if mode == "all":
+    if args.mode in ("seed", "all"):
+        if args.mode == "all":
             eng.reset()  # consolidation：先清空再重灌，保证幂等
         seed(eng)
-    if mode in ("distill", "all"):
+    if args.mode in ("distill", "all"):
         distill(eng)
-    if mode in ("rebuild", "all"):
+    if args.mode in ("rebuild", "all", "flow", "obsidian"):
         rebuild(eng)
+    if args.mode in ("graph", "all", "flow", "obsidian"):
+        build_graph(eng)
+    if args.mode in ("flow", "all"):
+        build_flow(eng)
+    if args.mode in ("obsidian", "all"):
+        export_obsidian(eng)
+    if args.mode == "incremental":
+        incremental(eng, text=args.text)
+    if args.mode == "ingest":
+        if not args.text:
+            print("[ingest] 需要 --text 参数")
+            sys.exit(1)
+        ingest(eng, args.text, args.type, args.source, args.importance)
     print("DONE.")
 
 if __name__ == "__main__":
