@@ -7,7 +7,7 @@
     "index": "../导入归档/README.md",
     "model": "海马体神经环路隐喻: 内嗅皮层(EC)索引 → 齿状回(DG)摄入 → CA3 关联 → CA1 巩固 → 下托(Subiculum)导出",
     "regions": 6,
-    "items": 42
+    "items": 46
   },
   "regions": [
     {
@@ -168,6 +168,11 @@
           "title": "证书备考",
           "detail": "已通过银行从业;7.13资产评估师补报、7.22初级经济师、7.27 ACCA截止;备考初级会计/银行从业(个人理财)/税务师。",
           "source": "../导入归档/workbuddy_memories/cloud-profile"
+        },
+        {
+          "title": "海马体知识库 v2 升级",
+          "detail": "2026-07-30 用户要求四部分升级：(1)把知识库与引擎更新到 GitHub(wzx11223344/hippocampus-memory-engine)并封装为 Skill,同时发布到 SkillHub;(2)把当前会话新增要求作为第一部分内容写回 knowledge.json;(3)同步到本地 Obsidian Vault;(4)建立自动迭代机制,使每次新建任务、新建对话或每日更新都能自动汇流进海马体,并自我更迭。",
+          "source": "当前会话"
         }
       ]
     },
@@ -195,8 +200,18 @@
         },
         {
           "title": "GitHub",
-          "detail": "已连接 (wzx11223344)。可作代码/站点类知识外脑。",
+          "detail": "已连接 (wzx11223344)。仓库 wzx11223344/hippocampus-memory-engine 存放引擎脚本、可视化站点(index.html/flow.html)与示例 knowledge.json,启用 GitHub Pages 作为线上镜像。",
           "source": "connector: github"
+        },
+        {
+          "title": "SkillHub / ClawHub",
+          "detail": "海马体记忆流引擎已封装为 Skill(hippocampus-memory-engine),支持 WorkBuddy 与 Trae 本地安装,并发布到 SkillHub/ClawHub 供外部调用。",
+          "source": "connector: skillhub"
+        },
+        {
+          "title": "Obsidian Vault",
+          "detail": "本地 Obsidian Vault 路径 C:/Users/Administrator/Documents/Obsidian Vault/海马体记忆流 已通过 export_obsidian.py 每日同步,含 regions 枢纽、memories 节点与双链图谱。",
+          "source": "connector: obsidian"
         },
         {
           "title": "导出说明",
