@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>海马体记忆流 · Hippocampus Memory Stream</title>
+<style>
+  :root{
+    --bg0:#05080f; --bg1:#0a1020; --ink:#e8f0ff; --muted:#8aa0c8;
+    --glass:rgba(18,28,52,0.55); --glass-brd:rgba(120,160,255,0.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 700px at 70% -10%, #122042 0%, var(--bg1) 45%, var(--bg0) 100%);
+    color:var(--ink); overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+  /* Header */
+  .hud{position:fixed;left:0;top:0;right:0;padding:18px 22px;pointer-events:none;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:5}
+  .title{pointer-events:none}
+  .title h1{font-size:17px;font-weight:650;letter-spacing:.5px;
+    background:linear-gradient(90deg,#7ee8ff,#a78bfa 60%,#ff9bd2);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .title p{font-size:11.5px;color:var(--muted);margin-top:4px;max-width:460px;line-height:1.5}
+  /* Search */
+  .search{pointer-events:auto;position:relative}
+  .search input{
+    width:260px;max-width:46vw;padding:9px 14px 9px 34px;border-radius:12px;
+    background:var(--glass);border:1px solid var(--glass-brd);color:var(--ink);
+    font-size:13px;outline:none;backdrop-filter:blur(10px)}
+  .search input::placeholder{color:#6f86b3}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.6}
+  .search .cnt{position:absolute;right:-2px;top:-9px;font-size:10px;color:#7ee8ff;
+    background:rgba(10,20,40,.8);border:1px solid var(--glass-brd);border-radius:8px;padding:1px 6px}
+  /* Legend */
+  .legend{position:fixed;left:22px;bottom:18px;z-index:5;display:flex;flex-direction:column;gap:7px;
+    pointer-events:none;background:var(--glass);border:1px solid var(--glass-brd);
+    border-radius:14px;padding:12px 14px;backdrop-filter:blur(10px);max-width:300px}
+  .legend .lg-title{font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.4px}
+  .legend .row{display:flex;align-items:center;gap:9px;font-size:11.5px;color:#cfe0ff}
+  .legend .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 10px currentColor}
+  .legend .role{color:var(--muted);font-size:10.5px}
+  /* Detail panel */
+  .panel{position:fixed;right:20px;top:84px;width:340px;max-width:88vw;z-index:8;
+    background:var(--glass);border:1px solid var(--glass-brd);border-radius:18px;
+    backdrop-filter:blur(16px);box-shadow:0 24px 60px rgba(0,0,0,.45);
+    padding:18px 18px 16px;transform:translateX(120%);transition:transform .42s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+  .panel.open{transform:translateX(0)}
+  .panel .ptag{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;color:#cfe0ff;
+    padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.06);margin-bottom:10px}
+  .panel .ptag .dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 8px currentColor}
+  .panel h2{font-size:16px;font-weight:650;line-height:1.35;margin-bottom:10px}
+  .panel .detail{font-size:13px;line-height:1.7;color:#d6e4ff;white-space:pre-wrap;max-height:40vh;overflow:auto}
+  .panel .src{margin-top:12px;font-size:10.5px;color:#7e96c4;border-top:1px dashed rgba(120,160,255,.2);padding-top:9px}
+  .panel .rel{margin-top:13px}
+  .panel .rel .rl{font-size:10.5px;color:var(--muted);margin-bottom:7px;letter-spacing:.3px}
+  .panel .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .panel .chip{font-size:11px;color:#cfe0ff;background:rgba(120,160,255,.12);
+    border:1px solid rgba(120,160,255,.25);border-radius:999px;padding:4px 10px;cursor:pointer;
+    transition:.18s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .panel .chip:hover{background:rgba(120,200,255,.28);transform:translateY(-1px)}
+  .panel .close{position:absolute;right:12px;top:12px;width:26px;height:26px;border-radius:8px;
+    border:1px solid var(--glass-brd);background:rgba(255,255,255,.05);color:#cfe0ff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:14px}
+  .panel .close:hover{background:rgba(255,120,160,.2)}
+  /* Hint */
+  .hint{position:fixed;right:20px;bottom:18px;z-index:5;font-size:10.5px;color:#6f86b3;
+    background:var(--glass);border:1px solid var(--glass-brd);border-radius:10px;padding:7px 11px;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:rgba(10,20,40,.9);border:1px solid var(--glass-brd);border-radius:12px;padding:9px 16px;
+    font-size:12px;color:#cfe0ff;z-index:9;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:680px){
+    .title p{display:none}
+    .legend{display:none}
+    .panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;border-radius:18px 18px 0 0}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div class="hud">
+  <div class="title">
+    <h1>海马体记忆流 · Hippocampus Memory Stream</h1>
+    <p>以海马体神经环路为隐喻的 Agent 外部记忆中枢。点击任意节点查看记忆，相关记忆自动互联。光点沿主回路（内嗅皮层→齿状回→CA3→CA1→下托→自动沉淀）流动。</p>
+  </div>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ee8ff" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+    <input id="q" placeholder="搜索记忆… (标题/内容/来源)" />
+    <span class="cnt" id="cnt" style="display:none">0</span>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="panel" id="panel">
+  <button class="close" id="pclose">✕</button>
+  <div class="ptag"><span class="dot" id="ptagDot"></span><span id="ptagTxt"></span></div>
+  <h2 id="ptitle"></h2>
+  <div class="detail" id="pdetail"></div>
+  <div class="src" id="psrc"></div>
+  <div class="rel" id="prel">
+    <div class="rl">相关记忆 · 自动关联</div>
+    <div class="chips" id="pchips"></div>
+  </div>
+</div>
+
+<div class="hint">滚轮缩放 · 拖拽平移 · 点击节点查看记忆</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GRAPH = {"regions":{"ec":{"name":"内嗅皮层 (Entorhinal Cortex)","color":"#2E7D32","summary":"记忆的入口与索引层：身份画像、学术背景、协作偏好与全部硬性约束。","role":"索引 / 门户"},"dg":{"name":"齿状回 (Dentate Gyrus)","color":"#1565C0","summary":"记忆的摄入层：所有原始备份、归档结构与文件索引。","role":"新记忆摄入 / 文件与备份"},"ca3":{"name":"CA3 (关联 / 模式补全)","color":"#6A1B9A","summary":"关联层：作品集技术教训、Trae工程约束、技能生态、创作。","role":"跨项目关联与工程约束"},"ca1":{"name":"CA1 (巩固 / 输出)","color":"#E65100","summary":"巩固与输出层：4大核心任务的规范、节点与状态。","role":"核心任务与产出"},"sub":{"name":"下托 / 海马伞 (Subiculum / Alveus)","color":"#00838F","summary":"导出层：已连接的线上知识库与同步通道。","role":"导出通道 / 线上知识库"},"auto":{"name":"自动沉淀 (Auto Consolidation)","color":"#37474F","summary":"由记忆流引擎从会话/日志中自动提取并巩固的知识点。","role":"引擎自动蒸馏的记忆"}},"order":["ec","dg","ca3","ca1","sub","auto"],"nodes":[{"id":"hub_ec","type":"hub","region":"ec","title":"内嗅皮层 (Entorhinal Cortex)","detail":"记忆的入口与索引层：身份画像、学术背景、协作偏好与全部硬性约束。","color":"#2E7D32","source":"海马体中枢"},{"id":"n0","type":"item","region":"ec","title":"身份画像","detail":"万值翔(wzx)｜华东师范大学经济与管理学院 经济学专业2027届本科｜云南红河人,现居上海,共青团员｜2027年6/7月毕业｜经营零食店,关注营业额分析与商品定价策略。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n1","type":"item","region":"ec","title":"学术背景","detail":"聚焦产业经济学经典模型与城市经济学｜学年论文《AI对我国各城市就业的影响》采用城市/省份面板数据,Bartik结构法测算工具变量,IFR机器人渗透率构建核心解释变量,双向固定效应面板模型估计｜8月31日交开题报告,11月30日交初稿(≥5000字),12月20日交定稿(查重≤20%)。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n2","type":"item","region":"ec","title":"实习与竞赛","detail":"实习横跨上海市经信委(智能制造项目)、国盛证券、中国联通、Lacoste等方向｜参加正大杯市场分析与调查大赛、上证杯ETF研究｜获省级数学建模竞赛二等奖。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n3","type":"item","region":"ec","title":"技术栈","detail":"Python(Pandas/Numpy/SQL)、Excel高级函数、计量经济学、因果推断、DSGE建模、宏观经济监测、量化金融｜GitHub账号wzx11223344,运维约27个公开仓库(量化金融/经济学工具/MCP服务/Agent技能/DSGE/贝叶斯/NLP)。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n4","type":"item","region":"ec","title":"内容平台","detail":"B站账号「黎明之剑11」,UID 502800415,粉丝约4435,播放量650.7万,点赞42.6万,2023年10月起投稿60+条｜代表作《你天生就是玩群星的料!》单条播放量50.7万,已纳入简历经历。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n5","type":"item","region":"ec","title":"核心任务","detail":"负责链主申报书附件3申报表合并,覆盖15家企业共17个攻关任务序号,已合并14家(费勉/合智/果栗/归墟/航天精密所/微创/钛米/宣康2项/奕瑞序号10/智元/中电科21所序号12/凯莱英生物序号13/它石智航序号14-15/艾普强序号16-17)｜奕瑞科技xlsx为OLE2加密格式,密码130988｜状态汇总严格表格化(企业名/序号/合并状态/问题备注)。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n6","type":"item","region":"ec","title":"秋招与简历","detail":"2027届秋招7月4日启动,目标银行/国企/选调/政府等稳定方向,计划再找两个实习丰富简历｜简历存于D:/个人简历/,分国企政府版、私企版、银行版三份,单列瀑布式排版,1页A4,含证件照,交付PDF+Word双格式,命名「个人简历-{版}-瀑布屏版」。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n7","type":"item","region":"ec","title":"证书备考","detail":"已通过银行从业资格证考试｜7月13日资产评估师补报已完成,7月22日初级经济师报名,7月27日ACCA报名截止｜同步备考初级会计、银行从业(个人理财)、税务师。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n8","type":"item","region":"ec","title":"协作偏好·真实","detail":"真实数字绝不编造(GitHub Star/fork、B站粉丝等须用工具真实获取)｜精修版100%保留原文,拒绝未授权重写或结构调整｜案例强制标注权威来源。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n9","type":"item","region":"ec","title":"协作偏好·流程","detail":"文本修改先提供原文及修改指令,再输出结果｜状态更新须含表格、根因分析、下一步拆解｜遇「撤回上一步」指令须精确回滚,反复改动后最终版本向用户确认。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n10","type":"item","region":"ec","title":"格式偏好","detail":"输出表格结构化(带状态指示与计数)、多层次标题+emoji排版、逐条对比改动前后、严格一页无空白页｜中文表达犀利简短,去伪存真,拒绝官方套话。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"n11","type":"item","region":"ec","title":"渠道与工具环境","detail":"QQ为指定即时通讯渠道,QQ邮箱已连接WorkBuddy,已安装hermes-qq技能｜Windows环境,Python/Node托管于C:/Users/Administrator/.workbuddy/｜优先调用Skills库而非单次硬编码,常用工具包括WorkBuddy、TRAE、Obsidian、飞书。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#2E7D32"},{"id":"hub_dg","type":"hub","region":"dg","title":"齿状回 (Dentate Gyrus)","detail":"记忆的摄入层：所有原始备份、归档结构与文件索引。","color":"#1565C0","source":"海马体中枢"},{"id":"n12","type":"item","region":"dg","title":"备份来源","detail":"workbuddy_memories.zip(导出2026-07-29 14:08) + trae_memory_backup_20260729_141832.zip。均来自旧机 dell(C:/Users/dell/、E:盘),与当前Administrator/D盘路径不同。","source":"../导入归档/README.md","mtype":"semantic","color":"#1565C0"},{"id":"n13","type":"item","region":"dg","title":"归档结构","detail":"导入归档/workbuddy_memories(manifest/cloud-profile/identity/workspace-memories) 与 导入归档/trae_memory(user_profile/projects/topics/session_memory)。","source":"../导入归档/README.md","mtype":"semantic","color":"#1565C0"},{"id":"n14","type":"item","region":"dg","title":"索引文件","detail":"导入归档/README.md — 两份备份完整目录与说明(总入口)。","source":"../导入归档/README.md","mtype":"semantic","color":"#1565C0"},{"id":"n15","type":"item","region":"dg","title":"WorkBuddy 工作区记忆","detail":"portfolio-demo(18轮移动端nav优化)｜链主申报书(附件3合并规范/24+企业/奕瑞密码130988)｜根工作区记忆+每日AI新闻推送自动化。","source":"../导入归档/workbuddy_memories/workspace-memories","mtype":"semantic","color":"#1565C0"},{"id":"n16","type":"item","region":"dg","title":"Trae 项目记忆","detail":"210技能库同步/SOLO修复、FFmpeg/Remotion/Seedance视频流、Warhammer同人、群组名单去重(删7名上交重复)、本机性能咨询(Dell Inspiron 15 3511 i5-1135G7/16GB/Iris Xe)。","source":"../导入归档/trae_memory/projects","mtype":"semantic","color":"#1565C0"},{"id":"hub_ca3","type":"hub","region":"ca3","title":"CA3 (关联 / 模式补全)","detail":"关联层：作品集技术教训、Trae工程约束、技能生态、创作。","color":"#6A1B9A","source":"海马体中枢"},{"id":"n17","type":"item","region":"ca3","title":"作品集 portfolio-demo","detail":"wzx11223344.github.io/portfolio-demo;18轮移动端导航优化。教训: 移动端backdrop-filter须@supports降级或直接禁用(华为/荣耀/iOS WebKit有bug致整页模糊+触摸失效);跨stacking context的z-index比较在移动端不可靠,overlay须置于nav内部同一stacking context。","source":"../导入归档/workbuddy_memories/workspace-memories/2026-07-21-09-34-29/.workbuddy/memory","mtype":"semantic","color":"#6A1B9A"},{"id":"n18","type":"item","region":"ca3","title":"Trae 工程约束","detail":"技能须装 C:\\Users\\dell\\.trae-cn\\skills;E盘备份;FFmpeg v6.1.1;Stata18路径;GitHub被墙;PowerShell生成JSON易失效→优先用Python;SOLO缓存database.db。","source":"../导入归档/trae_memory/projects/-e-/project_memory.md","mtype":"semantic","color":"#6A1B9A"},{"id":"n19","type":"item","region":"ca3","title":"技能生态","detail":"本地210技能库;飞书28+技能;本机托管Python/Node于 C:/Users/Administrator/.workbuddy/。","source":"../导入归档/trae_memory/user_profile.md","mtype":"semantic","color":"#6A1B9A"},{"id":"n20","type":"item","region":"ca3","title":"创作","detail":"Warhammer 40k同人爽文《Warhammer: The Lion Rebellion》(番茄小说)800-900章,主角第11军团原体(21世纪地球穿越者,钢铁侠/AI+灵能),9忠9叛2失踪军团设定。","source":"../导入归档/trae_memory/projects/-d-D-----/20260715/topics.md","mtype":"semantic","color":"#6A1B9A"},{"id":"hub_ca1","type":"hub","region":"ca1","title":"CA1 (巩固 / 输出)","detail":"巩固与输出层：4大核心任务的规范、节点与状态。","color":"#E65100","source":"海马体中枢"},{"id":"n21","type":"item","region":"ca1","title":"链主申报书·附件3合并","detail":"多家企业附件3申报表Excel合并为单xlsx。奕瑞科技xlsx为OLE2加密,密码130988(msoffcrypto解密)。合并规范: 每家一个序号;A列序号块纵向合并;B-J每列独立合并(非整块);K/S-T按攻关任务分组合并;L-R每行独立不合并。旧机输出 E:\\workbuddy工作储存\\链主申报书\\附件3_申报表_合并.xlsx。","source":"../导入归档/workbuddy_memories/workspace-memories/链主申报书/.workbuddy/memory","mtype":"semantic","color":"#E65100"},{"id":"n22","type":"item","region":"ca1","title":"学年论文","detail":"《AI对我国各城市就业的影响》。方法: Bartik结构法+IFR机器人渗透率+双向固定效应面板。52篇文献,45篇待CNKI/万方/百度学术逐条PDF复核。节点: 8/31开题→11/30初稿(≥5000字)→12/20定稿(查重≤20%)。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#E65100"},{"id":"n23","type":"item","region":"ca1","title":"2027届秋招 (7/4启动)","detail":"目标银行/国企/选调/政府。简历 D:/个人简历/ 三版(国企政府/私企/银行),单列瀑布式、含证件照、PDF+Word双格式。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#E65100"},{"id":"n24","type":"item","region":"ca1","title":"证书备考","detail":"已通过银行从业;7.13资产评估师补报、7.22初级经济师、7.27 ACCA截止;备考初级会计/银行从业(个人理财)/税务师。","source":"../导入归档/workbuddy_memories/cloud-profile","mtype":"semantic","color":"#E65100"},{"id":"hub_sub","type":"hub","region":"sub","title":"下托 / 海马伞 (Subiculum / Alveus)","detail":"导出层：已连接的线上知识库与同步通道。","color":"#00838F","source":"海马体中枢"},{"id":"n25","type":"item","region":"sub","title":"乐享知识库 (lexiang)","detail":"已连接MCP。本任务上传目标——海马体知识库结构化内容。链接遵循 whoami 返回的 company_domain 规则。","source":"connector: lexiang","mtype":"semantic","color":"#00838F"},{"id":"n26","type":"item","region":"sub","title":"腾讯文档 (tencent-docs)","detail":"已连接。可作为协作文档通道。","source":"connector: tencent-docs","mtype":"semantic","color":"#00838F"},{"id":"n27","type":"item","region":"sub","title":"金山文档 (kdocs)","detail":"已连接。","source":"connector: kdocs","mtype":"semantic","color":"#00838F"},{"id":"n28","type":"item","region":"sub","title":"GitHub","detail":"已连接 (wzx11223344)。可作代码/站点类知识外脑。","source":"connector: github","mtype":"semantic","color":"#00838F"},{"id":"n29","type":"item","region":"sub","title":"导出说明","detail":"线上知识库为记忆的「外脑」导出通道,与本地海马体中枢互为备份;写入前须 whoami 校验 sub_server_type 并确认目标。","source":"connector: lexiang","mtype":"semantic","color":"#00838F"},{"id":"hub_auto","type":"hub","region":"auto","title":"自动沉淀 (Auto Consolidation)","detail":"由记忆流引擎从会话/日志中自动提取并巩固的知识点。","color":"#37474F","source":"海马体中枢"},{"id":"n30","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- **海马体记忆流引擎（Skill 化）**：已打包为可复用 WorkBuddy Skill `hippocampus-memory-engine`，位于 `~/.workbuddy/skills/hippocampus-memory-engine/`（用户级，跨项目可用）。引擎本体在 `D:\\D盘workbuddy办公\\记忆流存储\\记忆流引擎\\`（config/embed/vectors/db/engine/sync/build_index）。GitHub 仓库 `wzx11223344/hippocampus-memory-engine`（public，含 Release `v1.0.0` zip 可直接安装）。每日 23:00 自动任务 `automation-1785321703691` 运行 `sync.py all` 把新会话记忆汇流进中枢。entry_id `2e6fb12a66f5453eb6107181d2eef2a3`；链接 `https://lexiangla.com/pages/2e6fb12a66f5453eb6107181d2ef2a3?company_from=c55b521670ae11f1861c4ab2ae8917c1`。","source":"记忆流引擎 memory.db (#1)","mtype":"semantic","color":"#37474F"},{"id":"n31","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- **线上乐享知识库**：已上传至「羽的组织」个人知识库（company_domain=lexiangla.com）。","source":"记忆流引擎 memory.db (#2)","mtype":"semantic","color":"#37474F"},{"id":"n32","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- **海马体知识库（本地）**：`D:\\D盘workbuddy办公\\记忆流存储\\海马体知识库\\index.html`（SVG 神经环路可视化，24 个知识点，可点击/搜索）；结构化数据 `knowledge.json`。数据源为 `导入归档/`。","source":"记忆流引擎 memory.db (#3)","mtype":"semantic","color":"#37474F"},{"id":"n33","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"## 知识库资产（2026-07-29 建立）","source":"记忆流引擎 memory.db (#4)","mtype":"semantic","color":"#37474F"},{"id":"n34","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- 用户明确要求：**后续任务与其他任务中，AI 也必须能知晓本账号长期记忆**。","source":"记忆流引擎 memory.db (#5)","mtype":"semantic","color":"#37474F"},{"id":"n35","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- 完整细节与原始备份见 `D:\\D盘workbuddy办公\\记忆流存储\\导入归档\\README.md`（索引）及 `workbuddy_memories/`、`trae_memory/` 两目录；需要深层细节时主动读取，不依赖用户重复提供。","source":"记忆流引擎 memory.db (#6)","mtype":"semantic","color":"#37474F"},{"id":"n36","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- 本文件（`~/.workbuddy/MEMORY.md`）为**账号级长期记忆**，覆盖所有工作区与新建任务；任何新会话/新任务开始时，AI 须以本文件为基准身份、偏好与核心任务来源。","source":"记忆流引擎 memory.db (#7)","mtype":"semantic","color":"#37474F"},{"id":"n37","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"## 跨任务 / 跨工作区召回约定（2026-07-29 用户确认）","source":"记忆流引擎 memory.db (#8)","mtype":"semantic","color":"#37474F"},{"id":"n38","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- 两份均来自旧机 dell（C:/Users/dell、E: 盘），非本机 Administrator。","source":"记忆流引擎 memory.db (#9)","mtype":"semantic","color":"#37474F"},{"id":"n39","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- Trae 记忆备份：`D:\\D盘workbuddy办公\\记忆流存储\\导入归档\\trae_memory\\`（user_profile / project_memory / 各项目 topics + session_memory）","source":"记忆流引擎 memory.db (#10)","mtype":"semantic","color":"#37474F"},{"id":"n40","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"- WorkBuddy 记忆导出包：`D:\\D盘workbuddy办公\\记忆流存储\\导入归档\\workbuddy_memories\\`（cloud-profile / identity / workspace-memories / manifest.txt）","source":"记忆流引擎 memory.db (#11)","mtype":"semantic","color":"#37474F"},{"id":"n41","type":"item","region":"auto","title":"[semantic] MEMORY.md","detail":"## 记忆备份位置","source":"记忆流引擎 memory.db (#12)","mtype":"semantic","color":"#37474F"}],"edges":[{"from":"hub_ec","to":"hub_dg","w":1.0,"kind":"trunk"},{"from":"hub_dg","to":"hub_ca3","w":1.0,"kind":"trunk"},{"from":"hub_ca3","to":"hub_ca1","w":1.0,"kind":"trunk"},{"from":"hub_ca1","to":"hub_sub","w":1.0,"kind":"trunk"},{"from":"hub_sub","to":"hub_auto","w":1.0,"kind":"trunk"},{"from":"hub_ec","to":"n0","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n1","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n2","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n3","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n4","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n5","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n6","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n7","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n8","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n9","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n10","w":0.9,"kind":"hub"},{"from":"hub_ec","to":"n11","w":0.9,"kind":"hub"},{"from":"hub_dg","to":"n12","w":0.9,"kind":"hub"},{"from":"hub_dg","to":"n13","w":0.9,"kind":"hub"},{"from":"hub_dg","to":"n14","w":0.9,"kind":"hub"},{"from":"hub_dg","to":"n15","w":0.9,"kind":"hub"},{"from":"hub_dg","to":"n16","w":0.9,"kind":"hub"},{"from":"hub_ca3","to":"n17","w":0.9,"kind":"hub"},{"from":"hub_ca3","to":"n18","w":0.9,"kind":"hub"},{"from":"hub_ca3","to":"n19","w":0.9,"kind":"hub"},{"from":"hub_ca3","to":"n20","w":0.9,"kind":"hub"},{"from":"hub_ca1","to":"n21","w":0.9,"kind":"hub"},{"from":"hub_ca1","to":"n22","w":0.9,"kind":"hub"},{"from":"hub_ca1","to":"n23","w":0.9,"kind":"hub"},{"from":"hub_ca1","to":"n24","w":0.9,"kind":"hub"},{"from":"hub_sub","to":"n25","w":0.9,"kind":"hub"},{"from":"hub_sub","to":"n26","w":0.9,"kind":"hub"},{"from":"hub_sub","to":"n27","w":0.9,"kind":"hub"},{"from":"hub_sub","to":"n28","w":0.9,"kind":"hub"},{"from":"hub_sub","to":"n29","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n30","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n31","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n32","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n33","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n34","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n35","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n36","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n37","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n38","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n39","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n40","w":0.9,"kind":"hub"},{"from":"hub_auto","to":"n41","w":0.9,"kind":"hub"},{"from":"n0","to":"n13","w":0.167,"kind":"sim"},{"from":"n0","to":"n1","w":0.165,"kind":"sim"},{"from":"n0","to":"n3","w":0.155,"kind":"sim"},{"from":"n1","to":"n22","w":0.507,"kind":"sim"},{"from":"n1","to":"n3","w":0.172,"kind":"sim"},{"from":"n2","to":"n13","w":0.162,"kind":"sim"},{"from":"n2","to":"n0","w":0.105,"kind":"sim"},{"from":"n2","to":"n1","w":0.096,"kind":"sim"},{"from":"n3","to":"n13","w":0.157,"kind":"sim"},{"from":"n4","to":"n13","w":0.165,"kind":"sim"},{"from":"n4","to":"n6","w":0.125,"kind":"sim"},{"from":"n4","to":"n23","w":0.118,"kind":"sim"},{"from":"n5","to":"n21","w":0.436,"kind":"sim"},{"from":"n5","to":"n15","w":0.195,"kind":"sim"},{"from":"n5","to":"n13","w":0.11,"kind":"sim"},{"from":"n6","to":"n23","w":0.687,"kind":"sim"},{"from":"n6","to":"n7","w":0.12,"kind":"sim"},{"from":"n7","to":"n24","w":0.817,"kind":"sim"},{"from":"n7","to":"n13","w":0.151,"kind":"sim"},{"from":"n7","to":"n23","w":0.14,"kind":"sim"},{"from":"n8","to":"n13","w":0.195,"kind":"sim"},{"from":"n8","to":"n10","w":0.144,"kind":"sim"},{"from":"n8","to":"n9","w":0.141,"kind":"sim"},{"from":"n9","to":"n13","w":0.167,"kind":"sim"},{"from":"n9","to":"n10","w":0.166,"kind":"sim"},{"from":"n10","to":"n13","w":0.197,"kind":"sim"},{"from":"n11","to":"n19","w":0.254,"kind":"sim"},{"from":"n11","to":"n13","w":0.185,"kind":"sim"},{"from":"n11","to":"n40","w":0.137,"kind":"sim"},{"from":"n12","to":"n38","w":0.368,"kind":"sim"},{"from":"n12","to":"n13","w":0.293,"kind":"sim"},{"from":"n12","to":"n14","w":0.241,"kind":"sim"},{"from":"n13","to":"n14","w":0.472,"kind":"sim"},{"from":"n13","to":"n40","w":0.417,"kind":"sim"},{"from":"n13","to":"n39","w":0.342,"kind":"sim"},{"from":"n14","to":"n35","w":0.26,"kind":"sim"},{"from":"n15","to":"n21","w":0.374,"kind":"sim"},{"from":"n15","to":"n17","w":0.254,"kind":"sim"},{"from":"n15","to":"n40","w":0.237,"kind":"sim"},{"from":"n16","to":"n39","w":0.211,"kind":"sim"},{"from":"n16","to":"n19","w":0.206,"kind":"sim"},{"from":"n16","to":"n13","w":0.2,"kind":"sim"},{"from":"n17","to":"n13","w":0.169,"kind":"sim"},{"from":"n17","to":"n40","w":0.12,"kind":"sim"},{"from":"n18","to":"n13","w":0.242,"kind":"sim"},{"from":"n18","to":"n12","w":0.235,"kind":"sim"},{"from":"n18","to":"n39","w":0.229,"kind":"sim"},{"from":"n19","to":"n13","w":0.298,"kind":"sim"},{"from":"n20","to":"n13","w":0.185,"kind":"sim"},{"from":"n20","to":"n39","w":0.126,"kind":"sim"},{"from":"n20","to":"n14","w":0.121,"kind":"sim"},{"from":"n21","to":"n13","w":0.105,"kind":"sim"},{"from":"n22","to":"n13","w":0.187,"kind":"sim"},{"from":"n22","to":"n40","w":0.103,"kind":"sim"},{"from":"n23","to":"n13","w":0.188,"kind":"sim"},{"from":"n23","to":"n24","w":0.163,"kind":"sim"},{"from":"n24","to":"n13","w":0.185,"kind":"sim"},{"from":"n25","to":"n31","w":0.343,"kind":"sim"},{"from":"n25","to":"n32","w":0.261,"kind":"sim"},{"from":"n25","to":"n29","w":0.183,"kind":"sim"},{"from":"n26","to":"n27","w":0.277,"kind":"sim"},{"from":"n26","to":"n28","w":0.215,"kind":"sim"},{"from":"n26","to":"n11","w":0.099,"kind":"sim"},{"from":"n27","to":"n28","w":0.158,"kind":"sim"},{"from":"n27","to":"n25","w":0.107,"kind":"sim"},{"from":"n28","to":"n25","w":0.16,"kind":"sim"},{"from":"n29","to":"n32","w":0.174,"kind":"sim"},{"from":"n29","to":"n31","w":0.139,"kind":"sim"},{"from":"n30","to":"n39","w":0.489,"kind":"sim"},{"from":"n30","to":"n41","w":0.488,"kind":"sim"},{"from":"n30","to":"n40","w":0.47,"kind":"sim"},{"from":"n31","to":"n33","w":0.42,"kind":"sim"},{"from":"n31","to":"n32","w":0.334,"kind":"sim"},{"from":"n32","to":"n40","w":0.4,"kind":"sim"},{"from":"n32","to":"n39","w":0.395,"kind":"sim"},{"from":"n32","to":"n33","w":0.357,"kind":"sim"},{"from":"n33","to":"n41","w":0.485,"kind":"sim"},{"from":"n33","to":"n39","w":0.393,"kind":"sim"},{"from":"n34","to":"n41","w":0.351,"kind":"sim"},{"from":"n34","to":"n36","w":0.346,"kind":"sim"},{"from":"n34","to":"n37","w":0.296,"kind":"sim"},{"from":"n35","to":"n39","w":0.499,"kind":"sim"},{"from":"n35","to":"n40","w":0.485,"kind":"sim"},{"from":"n35","to":"n41","w":0.367,"kind":"sim"},{"from":"n36","to":"n41","w":0.291,"kind":"sim"},{"from":"n36","to":"n37","w":0.281,"kind":"sim"},{"from":"n37","to":"n41","w":0.384,"kind":"sim"},{"from":"n37","to":"n33","w":0.371,"kind":"sim"},{"from":"n37","to":"n30","w":0.332,"kind":"sim"},{"from":"n38","to":"n41","w":0.419,"kind":"sim"},{"from":"n38","to":"n39","w":0.347,"kind":"sim"},{"from":"n39","to":"n40","w":0.685,"kind":"sim"},{"from":"n39","to":"n41","w":0.6,"kind":"sim"},{"from":"n40","to":"n41","w":0.484,"kind":"sim"}]};
+
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W=0,H=0,DPR=1;
+
+// ---- data index ----
+const nodes = GRAPH.nodes;
+const edges = GRAPH.edges;
+const regions = GRAPH.regions;
+const order = GRAPH.order;
+const byId = {};
+nodes.forEach(n=>byId[n.id]=n);
+// sim adjacency for related memories
+const simAdj = {}; // id -> [{to,w}]
+nodes.forEach(n=>simAdj[n.id]=[]);
+edges.filter(e=>e.kind==='sim').forEach(e=>{
+  simAdj[e.from].push({to:e.to,w:e.w});
+  simAdj[e.to].push({to:e.from,w:e.w});
+});
+Object.values(simAdj).forEach(a=>a.sort((x,y)=>y.w-x.w));
+
+// ---- view transform ----
+let view = {x:0,y:0,scale:1, tx:0,ty:0,tscale:1};
+let hubPos = {};     // region -> {x,y,baseX,baseY,phase}
+let layoutDone=false;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = canvas.clientWidth; H = canvas.clientHeight;
+  canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(!layoutDone) layout();
+}
+
+function layout(){
+  const n = order.length;
+  const marginX = Math.max(90, W*0.11);
+  const usableW = W - marginX*2;
+  order.forEach((rid,i)=>{
+    const t = n===1?0.5:i/(n-1);
+    const x = marginX + usableW*t;
+    const y = H*0.5 + Math.sin(t*Math.PI*1.6 - 0.4)*H*0.07;
+    hubPos[rid] = {x,y,baseX:x,baseY:y,phase:i*1.27};
+  });
+  order.forEach((rid,k)=>{
+    const hub = hubPos[rid];
+    const items = nodes.filter(n=>n.region===rid && n.type==='item');
+    const m = items.length;
+    const baseR = 58 + Math.min(m,14)*5.5;
+    // alternate cluster to upper/lower hemisphere to reduce overlap
+    const dir = (k%2===0)? -1 : 1;
+    items.forEach((it,idx)=>{
+      const a = (m===1? -Math.PI/2 : (-Math.PI*0.92/2) + (idx/(Math.max(1,m-1)))*Math.PI*0.92);
+      const rx = baseR*0.62, ry = baseR;
+      it.tx = hub.x + Math.cos(a)*rx;
+      it.ty = hub.y + Math.sin(a)*ry*dir*0.9 + dir*10;
+      it.phase = idx*0.9 + k*1.7;
+    });
+  });
+  layoutDone = true;
+}
+
+// node runtime state
+nodes.forEach(n=>{ n.x=n.tx||0; n.y=n.ty||0; n.hover=false; n.focus=false; });
+
+// ---- interaction state ----
+let mouse={x:-1,y:-1,down:false,lx:0,ly:0,moved:false};
+let selected=null;
+let searchSet=null; // Set of ids matching
+let time=0;
+
+function worldToScreen(x,y){ return {x:(x+view.x)*view.scale, y:(y+view.y)*view.scale}; }
+function screenToWorld(x,y){ return {x:x/view.scale - view.x, y:y/view.scale - view.y}; }
+
+function getNodeAt(sx,sy){
+  // check items + hubs (reverse so topmost first)
+  for(let i=nodes.length-1;i>=0;i--){
+    const n=nodes[i];
+    const p=worldToScreen(n.x,n.y);
+    const r=(n.type==='hub'?22:9)/1 + 4;
+    const rr=r*view.scale;
+    const dx=sx-p.x, dy=sy-p.y;
+    if(dx*dx+dy*dy <= rr*rr) return n;
+  }
+  return null;
+}
+
+// ---- helpers ----
+function lerp(a,b,t){return a+(b-a)*t;}
+function bezier(p0,p1,p2,t){const u=1-t;return{x:u*u*p0.x+2*u*t*p1.x+t*t*p2.y, y:u*u*p0.y+2*u*t*p1.y+t*t*p2.y};}
+function edgeControl(p1,p2,bow){const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;const dx=p2.x-p1.x,dy=p2.y-p1.y;const nx=-dy,ny=dx;const len=Math.hypot(nx,ny)||1;return{x:mx+nx/len*bow,y:my+ny/len*bow};}
+
+function nodeVisible(n){
+  if(!searchSet) return true;
+  return searchSet.has(n.id);
+}
+
+// ---- drawing ----
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // background vignette
+  const g=ctx.createRadialGradient(W*0.6,H*0.35,80,W*0.5,H*0.5,Math.max(W,H)*0.75);
+  g.addColorStop(0,'rgba(20,40,80,0.20)');g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+  const showAll = !searchSet;
+
+  // 1) sim edges (interconnections) - subtle
+  edges.filter(e=>e.kind==='sim').forEach(e=>{
+    const a=byId[e.from], b=byId[e.to];
+    const pa=worldToScreen(a.x,a.y), pb=worldToScreen(b.x,b.y);
+    const c=edgeControl(pa,pb,18*view.scale);
+    let alpha = 0.10 + e.w*0.34;
+    const involved = selected && (selected.id===e.from||selected.id===e.to);
+    const inSearch = showAll || (searchSet.has(e.from)&&searchSet.has(e.to));
+    if(selected){ alpha = involved?0.55:0.04; }
+    if(!inSearch) alpha*=0.25;
+    alpha=Math.min(alpha,0.6);
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.quadraticCurveTo(c.x,c.y,pb.x,pb.y);
+    ctx.strokeStyle=`rgba(130,170,255,${alpha})`;
+    ctx.lineWidth=(0.6+e.w*1.6)*view.scale*0.7;
+    ctx.stroke();
+  });
+
+  // 2) trunk edges (hub->hub) glowing + particles
+  const trunk=edges.filter(e=>e.kind==='trunk');
+  trunk.forEach(e=>{
+    const a=byId[e.from], b=byId[e.to];
+    const pa=worldToScreen(a.x,a.y), pb=worldToScreen(b.x,b.y);
+    const c=edgeControl(pa,pb,40*view.scale);
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.quadraticCurveTo(c.x,c.y,pb.x,pb.y);
+    ctx.strokeStyle='rgba(126,232,255,0.28)';ctx.lineWidth=2.2*view.scale;ctx.stroke();
+    // particles
+    const speed=0.00018;
+    for(let k=0;k<3;k++){
+      let t=((time*speed)+k/3)%1;
+      const p=bezier(pa,c,pb,t);
+      const gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,7*view.scale);
+      gr.addColorStop(0,'rgba(180,250,255,0.95)');gr.addColorStop(1,'rgba(126,232,255,0)');
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,7*view.scale,0,7);ctx.fill();
+    }
+  });
+
+  // 3) hub->item edges + light particles
+  edges.filter(e=>e.kind==='hub').forEach(e=>{
+    const a=byId[e.from], b=byId[e.to];
+    const pa=worldToScreen(a.x,a.y), pb=worldToScreen(b.x,b.y);
+    const c=edgeControl(pa,pb,14*view.scale);
+    let alpha=0.18;
+    if(selected){ alpha = (selected.id===e.from||selected.id===e.to)?0.5:0.05; }
+    if(!showAll){ alpha = (searchSet.has(e.to)||searchSet.has(e.from))?0.5:0.04; }
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.quadraticCurveTo(c.x,c.y,pb.x,pb.y);
+    ctx.strokeStyle=`rgba(150,190,255,${alpha})`;ctx.lineWidth=1*view.scale;ctx.stroke();
+    if(selected && (selected.id===e.from)){
+      const t=((time*0.0004)%1);
+      const p=bezier(pa,c,pb,t);
+      ctx.fillStyle='rgba(180,230,255,0.9)';ctx.beginPath();ctx.arc(p.x,p.y,3.2*view.scale,0,7);ctx.fill();
+    }
+  });
+
+  // 4) nodes
+  nodes.forEach(n=>{
+    const p=worldToScreen(n.x,n.y);
+    const isHub=n.type==='hub';
+    const baseR=isHub?20:7.5;
+    const focus = selected && selected.id===n.id;
+    const hot = n.hover;
+    const dim = !showAll && !searchSet.has(n.id);
+    let r=baseR;
+    if(hot) r=baseR*1.25;
+    if(focus) r=baseR*1.4;
+    const col=n.color||'#7ee8ff';
+    if(isHub){
+      // pulsing ring
+      const pulse=1+Math.sin(time*0.002 + n.phase||0)*0.12;
+      ctx.beginPath();ctx.arc(p.x,p.y,r*pulse+6,0,7);
+      ctx.strokeStyle=hexA(col,0.35);ctx.lineWidth=1.5*view.scale;ctx.stroke();
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);
+      const gr=ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,r);
+      gr.addColorStop(0,hexA(col,0.95));gr.addColorStop(1,hexA(col,0.55));
+      ctx.fillStyle=gr;ctx.fill();
+      ctx.shadowColor=col;ctx.shadowBlur=18*view.scale;
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fillStyle=col;ctx.globalAlpha=dim?0.3:1;ctx.fill();ctx.globalAlpha=1;ctx.shadowBlur=0;
+      // label
+      if(!dim){
+        ctx.fillStyle='rgba(232,240,255,0.95)';ctx.font=`600 ${12*view.scale}px -apple-system,Segoe UI,sans-serif`;
+        ctx.textAlign='center';ctx.textBaseline='top';
+        ctx.fillText(regions[n.region].name.split(' (')[0], p.x, p.y+r+9);
+      }
+    } else {
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);
+      ctx.fillStyle=col;ctx.globalAlpha=dim?0.18:1;
+      if(hot||focus){ctx.shadowColor=col;ctx.shadowBlur=14*view.scale;}
+      ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;
+      if(focus){ctx.beginPath();ctx.arc(p.x,p.y,r+4,0,7);ctx.strokeStyle=hexA(col,0.8);ctx.lineWidth=1.5;ctx.stroke();}
+    }
+  });
+
+  // hover tooltip
+  const hn = mouse.hoverNode;
+  if(hn && !selected){
+    const p=worldToScreen(hn.x,hn.y);
+    const txt=hn.title;
+    ctx.font='600 12px -apple-system,Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    const tw=ctx.measureText(txt).width;
+    const bx=p.x+ (hn.type==='hub'?24:13), by=p.y-9;
+    ctx.fillStyle='rgba(8,14,30,0.92)';roundRect(bx,by,tw+18,22,7);ctx.fill();
+    ctx.strokeStyle=hexA(hn.color||'#7ee8ff',0.5);ctx.lineWidth=1;roundRect(bx,by,tw+18,22,7);ctx.stroke();
+    ctx.fillStyle='#e8f0ff';ctx.fillText(txt,bx+9,by+11);
+  }
+}
+
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function hexA(hex,a){const h=hex.replace('#','');const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return `rgba(${r},${g},${b},${a})`;}
+
+// ---- animation ----
+let last=performance.now();
+function loop(now){
+  const dt=now-last;last=now;time=now;
+  // float nodes slightly + animate layout toward target (eased)
+  nodes.forEach(n=>{
+    const tx=n.tx||n.x, ty=n.ty||n.y;
+    const fx=Math.sin(time*0.0006 + (n.phase||0))*3;
+    const fy=Math.cos(time*0.0005 + (n.phase||0))*3;
+    n.x += ((tx+fx)-n.x)*0.06;
+    n.y += ((ty+fy)-n.y)*0.06;
+  });
+  // hubs extra float
+  order.forEach(rid=>{const h=hubPos[rid];h.x+=(h.baseX-h.x)*0.05;h.y+=(h.baseY-h.y)*0.05;});
+  // view easing
+  view.x += (view.tx-view.x)*0.12;
+  view.y += (view.ty-view.y)*0.12;
+  view.scale += (view.tscale-view.scale)*0.12;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ---- events ----
+canvas.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;
+  if(mouse.down){
+    const dx=mouse.x-mouse.lx, dy=mouse.y-mouse.ly;
+    if(Math.abs(dx)+Math.abs(dy)>3) mouse.moved=true;
+    view.tx += dx/view.scale; view.ty += dy/view.scale;
+    mouse.lx=mouse.x;mouse.ly=mouse.y;
+  } else {
+    const n=getNodeAt(mouse.x,mouse.y);
+    mouse.hoverNode=n;
+    nodes.forEach(nn=>nn.hover=false);
+    if(n) n.hover=true;
+    canvas.style.cursor = n?'pointer':'grab';
+  }
+});
+canvas.addEventListener('mousedown',e=>{mouse.down=true;mouse.moved=false;const r=canvas.getBoundingClientRect();mouse.lx=e.clientX-r.left;mouse.ly=e.clientY-r.top;});
+window.addEventListener('mouseup',e=>{
+  if(mouse.down && !mouse.moved){
+    const r=canvas.getBoundingClientRect();
+    const n=getNodeAt(mouse.x,mouse.y);
+    if(n) selectNode(n);
+    else closePanel();
+  }
+  mouse.down=false;
+});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=canvas.getBoundingClientRect();
+  const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const before=screenToWorld(mx,my);
+  const factor=e.deltaY<0?1.12:0.89;
+  view.tscale=Math.max(0.4,Math.min(2.6,view.tscale*factor));
+  // keep cursor anchored
+  const after=screenToWorld(mx,my);
+  view.tx += after.x-before.x; view.ty += after.y-before.y;
+},{passive:false});
+
+// touch
+canvas.addEventListener('touchstart',e=>{const t=e.touches[0];const r=canvas.getBoundingClientRect();mouse.x=t.clientX-r.left;mouse.y=t.clientY-r.top;mouse.down=true;mouse.moved=false;mouse.lx=mouse.x;mouse.ly=mouse.y;},{passive:true});
+canvas.addEventListener('touchmove',e=>{const t=e.touches[0];const r=canvas.getBoundingClientRect();const nx=t.clientX-r.left,ny=t.clientY-r.top;const dx=nx-mouse.lx,dy=ny-mouse.ly;if(Math.abs(dx)+Math.abs(dy)>3)mouse.moved=true;view.tx+=dx/view.scale;view.ty+=dy/view.scale;mouse.lx=nx;mouse.ly=ny;mouse.x=nx;mouse.y=ny;},{passive:true});
+canvas.addEventListener('touchend',e=>{if(mouse.down&&!mouse.moved){const n=getNodeAt(mouse.x,mouse.y);if(n)selectNode(n);else closePanel();}mouse.down=false;},{passive:true});
+
+// ---- panel ----
+const panel=document.getElementById('panel');
+function selectNode(n){
+  selected=n;
+  document.getElementById('ptagDot').style.color=n.color;
+  document.getElementById('ptagDot').style.background=n.color;
+  document.getElementById('ptagTxt').textContent = n.type==='hub' ? regions[n.region].role : (regions[n.region].name.split(' (')[0]);
+  document.getElementById('ptitle').textContent = n.title;
+  document.getElementById('pdetail').textContent = n.detail;
+  document.getElementById('psrc').textContent = '来源：' + (n.source||'—');
+  // related chips
+  const chips=document.getElementById('pchips');chips.innerHTML='';
+  const rel=simAdj[n.id]||[];
+  if(rel.length===0){
+    document.getElementById('prel').style.display='none';
+  } else {
+    document.getElementById('prel').style.display='block';
+    rel.slice(0,8).forEach(r=>{
+      const t=document.createElement('div');t.className='chip';t.textContent=byId[r.to].title;
+      t.onclick=()=>{ selectNode(byId[r.to]); };
+      chips.appendChild(t);
+    });
+  }
+  panel.classList.add('open');
+}
+function closePanel(){selected=null;panel.classList.remove('open');}
+document.getElementById('pclose').onclick=closePanel;
+
+// ---- legend ----
+(function(){
+  const lg=document.getElementById('legend');
+  let html='<div class="lg-title">海马体神经环路 · 记忆分区</div>';
+  order.forEach(rid=>{
+    const r=regions[rid];
+    html+=`<div class="row"><span class="dot" style="background:${r.color};color:${r.color}"></span><div><div>${r.name.split(' (')[0]}</div><div class="role">${r.role}</div></div></div>`;
+  });
+  lg.innerHTML=html;
+})();
+
+// ---- search ----
+const q=document.getElementById('q');
+const cnt=document.getElementById('cnt');
+q.addEventListener('input',()=>{
+  const v=q.value.trim().toLowerCase();
+  if(!v){searchSet=null;cnt.style.display='none';return;}
+  const set=new Set();
+  nodes.forEach(n=>{
+    if((n.title||'').toLowerCase().includes(v)||(n.detail||'').toLowerCase().includes(v)||(n.source||'').toLowerCase().includes(v)) set.add(n.id);
+  });
+  searchSet=set;
+  cnt.style.display='inline-block';cnt.textContent=set.size;
+  // also include hubs of matched items for context
+  if(set.size>0){ order.forEach(rid=>{ if(nodes.some(n=>n.region===rid&&n.type==='item'&&set.has(n.id))) set.add('hub_'+rid); }); }
+});
+
+// ---- toast ----
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ---- init ----
+window.addEventListener('resize',resize);
+resize();
+requestAnimationFrame(loop);
+toast('点击节点查看记忆 · 已连接 '+nodes.length+' 个记忆节点');
+</script>
+</body>
+</html>
