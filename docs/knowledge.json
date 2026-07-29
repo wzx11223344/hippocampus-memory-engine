@@ -176,7 +176,7 @@
         },
         {
           "title": "第一部分：GitHub + Skill + SkillHub 上线",
-          "detail": "2026-07-30 完成：GitHub 仓库 wzx11223344/hippocampus-memory-engine 已推送 v1.1.0 代码、可视化站点(index.html/flow.html)与示例 knowledge.json;本地 Trae Skill 位于 C:\\Users\\Administrator\\.trae-cn\\skills\\hippocampus-memory-engine;SkillHub/ClawHub 已发布 hippocampus-memory-engine@1.0.0 (k97cf8jgpcjvc9p9m410c6z4hd8bep6b),可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
+          "detail": "2026-07-30 完成：GitHub 仓库 wzx11223344/hippocampus-memory-engine 已推送 v1.1.0 代码、可视化站点(index.html/flow.html)与示例 knowledge.json;本地 SkillHub 已部署 Trae Skill(C:\\Users\\Administrator\\.trae-cn\\skills\\hippocampus-memory-engine)与 WorkBuddy Skill(~/.workbuddy/skills/hippocampus-memory-engine),可本地触发;外部通过 ClawHub 发布 hippocampus-memory-engine@1.1.1(versionId:k97c364gnctm61tsjxp00wyxv58bf1we),可用 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
           "source": "当前会话"
         }
       ]
@@ -209,9 +209,14 @@
           "source": "connector: github"
         },
         {
-          "title": "SkillHub / ClawHub",
-          "detail": "已发布 hippocampus-memory-engine@1.1.1 (versionId: k97c364gnctm61tsjxp00wyxv58bf1we),支持 WorkBuddy 与 Trae 本地安装,外部可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
+          "title": "SkillHub（本地技能目录）",
+          "detail": "Trae 侧位于 C:\\Users\\Administrator\\.trae-cn\\skills\\hippocampus-memory-engine,WorkBuddy 侧位于 ~/.workbuddy/skills/hippocampus-memory-engine,已作为用户级 skill 本地部署,可直接通过自然语言触发。腾讯策展的 BuiltinMarket(SkillHub 官方市场)无用户自助上传接口,因此本 skill 未进入官方 SkillHub 市场。",
           "source": "connector: skillhub"
+        },
+        {
+          "title": "ClawHub（外部发布）",
+          "detail": "已通过 ClawHub 发布 hippocampus-memory-engine@1.1.1(versionId:k97c364gnctm61tsjxp00wyxv58bf1we),支持 WorkBuddy 与 Trae 本地安装,外部可用 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
+          "source": "connector: clawhub"
         },
         {
           "title": "Obsidian Vault",

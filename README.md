@@ -17,7 +17,7 @@
 - **零模型下载**：本地 TF-IDF 向量化（仅依赖 `numpy`），离线可跑、隐私友好
 - **跨会话同步**：配合每日 `sync.py all` 定时任务，任何新任务/新对话的记忆当晚自动汇流进中枢
 - **会话级增量**：`sync.py incremental --text` 可在每次新建任务/对话结束时实时追加，不重复灌入历史数据
-- **Skill 化**：已封装为 WorkBuddy / Trae Skill，已发布到 SkillHub/ClawHub
+- **Skill 化**：已封装为 WorkBuddy / Trae Skill，本地 SkillHub（~/.workbuddy/skills/ 或 ~/.trae-cn/skills/）已安装，并通过 ClawHub 外部发布
 
 ## 🚀 快速开始
 
@@ -50,7 +50,7 @@ venv/Scripts/python.exe scripts/sync.py all
 ```
 hippocampus-memory-engine/
 ├── SKILL.md                       # Skill 说明（WorkBuddy/Trae 触发用）
-├── _meta.json                     # Skill 元数据（SkillHub/ClawHub 发布用）
+├── _meta.json                     # Skill 元数据（ClawHub 发布用；本地 SkillHub 目录直接复制即可使用）
 ├── README.md                      # 本文件
 ├── docs/                          # 可视化站点（GitHub Pages 源）
 │   ├── index.html                 # 海马体 SVG 可视化
@@ -86,10 +86,15 @@ hippocampus-memory-engine/
 1. 把 `SKILL.md` + `_meta.json` 放入 `~/.trae-cn/skills/hippocampus-memory-engine/`。
 2. 重启 Trae 后即可通过自然语言触发（如"更新海马体知识库"）。
 
-**SkillHub / ClawHub**
+**ClawHub（外部安装）**
 ```bash
 npx clawhub@latest skill install hippocampus-memory-engine
 ```
+
+**SkillHub（本地目录）**
+1. Trae: 复制本仓库到 `~/.trae-cn/skills/hippocampus-memory-engine/`
+2. WorkBuddy: 复制本仓库到 `~/.workbuddy/skills/hippocampus-memory-engine/`
+3. 重启后可通过自然语言触发。注意：腾讯策展的 BuiltinMarket（官方 SkillHub）无用户自助上传接口。
 
 ## 🧪 检索示例
 
