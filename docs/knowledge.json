@@ -210,7 +210,7 @@
         },
         {
           "title": "SkillHub / ClawHub",
-          "detail": "已发布 hippocampus-memory-engine@1.0.0 (id: k97cf8jgpcjvc9p9m410c6z4hd8bep6b),支持 WorkBuddy 与 Trae 本地安装,外部可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
+          "detail": "已发布 hippocampus-memory-engine@1.1.0 (versionId: k970pm665dgyp99fzfhf8vshdd8bfdv8),支持 WorkBuddy 与 Trae 本地安装,外部可通过 npx clawhub@latest skill install hippocampus-memory-engine 安装。",
           "source": "connector: skillhub"
         },
         {
