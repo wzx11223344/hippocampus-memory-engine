@@ -1,0 +1,19 @@
+{
+  "user_id": "user",
+  "similarity_threshold": 0.10,
+  "top_k": 5,
+  "window": 20,
+  "paths": {
+    "db": "memory.db",
+    "vectors": "vectors/index.npy",
+    "vocab": "vectors/vocab.json",
+    "knowledge": "knowledge.json",
+    "index_html": "index.html",
+    "sources": {
+      "memory_md": "MEMORY.md",
+      "workspace_logs": "logs",
+      "archive_readme": "README.md",
+      "trae_memory": "trae_memory"
+    }
+  }
+}

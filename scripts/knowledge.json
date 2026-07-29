@@ -1,0 +1,65 @@
+{
+  "title": "海马体记忆流知识库（示例）",
+  "subtitle": "以海马体神经环路为隐喻的外部记忆中枢 · 本文件为引擎开箱示例，请替换为你的真实 knowledge.json",
+  "regions": [
+    {
+      "id": "ec",
+      "name": "内嗅皮层 (EC)",
+      "role": "感知入口 / 编码",
+      "color": "#5C6BC0",
+      "summary": "外部信息（日志、文档、会话）的接收与初步编码层。",
+      "items": [
+        { "title": "情景记忆入口", "detail": "每次会话产生的日志、文件、对话都在此被感知与编码。", "source": "示例" },
+        { "title": "语义记忆入口", "detail": "偏好、身份、项目约定等结构化知识在此被接收。", "source": "示例" }
+      ]
+    },
+    {
+      "id": "dg",
+      "name": "齿状回 (DG)",
+      "role": "模式分离 / 去重",
+      "color": "#26A69A",
+      "summary": "把相似记忆打散为可区分的稀疏表征，避免混淆。",
+      "items": [
+        { "title": "稀疏编码", "detail": "TF-IDF 向量化实现轻量级模式分离，无需下载大模型。", "source": "示例" }
+      ]
+    },
+    {
+      "id": "ca3",
+      "name": "CA3",
+      "role": "联想检索 / 召回",
+      "color": "#FFA726",
+      "summary": "基于相似度的联想回忆，支撑 RAG 的 recall 步骤。",
+      "items": [
+        { "title": "余弦召回", "detail": "查询向量与 L2 向量库做余弦相似度检索，返回 top-k。", "source": "示例" }
+      ]
+    },
+    {
+      "id": "ca1",
+      "name": "CA1",
+      "role": "整合 / 巩固",
+      "color": "#EF5350",
+      "summary": "把检索到的记忆整合进上下文，并周期性蒸馏进知识库。",
+      "items": [
+        { "title": "蒸馏到知识库", "detail": "高价值记忆被自动蒸馏进 knowledge.json 的 auto 区。", "source": "示例" }
+      ]
+    },
+    {
+      "id": "subiculum",
+      "name": "下托 (Subiculum)",
+      "role": "输出 / 导出",
+      "color": "#AB47BC",
+      "summary": "向外输出：可视化 index.html、乐享/ GitHub Pages 镜像。",
+      "items": [
+        { "title": "可视化导出", "detail": "依据 knowledge.json 重建 index.html（海马体 SVG 可视化）。", "source": "示例" }
+      ]
+    },
+    {
+      "id": "auto",
+      "name": "自动沉淀 (Auto)",
+      "role": "引擎自动蒸馏",
+      "color": "#37474F",
+      "summary": "由 sync.py distill 自动生成，请勿手动编辑。",
+      "items": []
+    }
+  ]
+}
