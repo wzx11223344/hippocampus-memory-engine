@@ -91,10 +91,16 @@ hippocampus-memory-engine/
 npx clawhub@latest skill install hippocampus-memory-engine
 ```
 
-**SkillHub（本地目录）**
+**SkillHub（官方市场）**
+```text
+请根据 https://skillhub.cn/install/skillhub.md，安装 hippocampus-memory-engine。
+```
+已发布页面：https://skillhub.cn/skills/user_053d27d0/hippocampus-memory-engine
+
+**本地目录（备用）**
 1. Trae: 复制本仓库到 `~/.trae-cn/skills/hippocampus-memory-engine/`
 2. WorkBuddy: 复制本仓库到 `~/.workbuddy/skills/hippocampus-memory-engine/`
-3. 重启后可通过自然语言触发。注意：腾讯策展的 BuiltinMarket（官方 SkillHub）无用户自助上传接口。
+3. 重启后可通过自然语言触发。
 
 ## 🧪 检索示例
 
